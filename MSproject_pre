@@ -1,0 +1,52 @@
+/* mbed Microcontroller Library
+ * Copyright (c) 2019 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "mbed.h"
+#include "platform/mbed_thread.h"
+
+// Blinking rate in milliseconds
+#define SCANNING_RATE_MS                                                    50
+
+DigitalIn judgement(D12);              //whether the module is activated
+DigitalOut buzzer(A0);
+BusOut nu_display(D2,D3,D4,D5,D6,D9,D10,D11);
+
+void dsply_nu(int nu)
+{
+    switch(nu)
+            {
+                case 0: nu_display = 0x3F; break;          //display 0 
+                case 1: nu_display = 0x06; break;          //display 1
+                case 2: nu_display = 0x5B; break;          //display 2 
+                case 3: nu_display = 0x4F; break;          //display 3
+                case 4: nu_display = 0x66; break;          //display 4 
+                case 5: nu_display = 0x6D; break;          //display 5
+                case 6: nu_display = 0x7D; break;          //display 6 
+                case 7: nu_display = 0x07; break;          //display 7
+                case 8: nu_display = 0x7F; break;          //display 8 
+                case 9: nu_display = 0x6F; break;          //display 9
+            }
+}
+
+
+int main()
+{
+    int count = 0;
+    dsply_nu(count);
+    while(1)
+    {
+        if(judgement == 0)
+        {
+            count += 1;
+            dsply_nu(count);
+            while(judgement == 0)
+            {
+                buzzer = 1;             //just for test
+                thread_sleep_for(SCANNING_RATE_MS);
+            }
+            buzzer = 0;
+        }
+    }
+}
