@@ -1,0 +1,153 @@
+/* mbed Microcontroller Library
+ * Copyright (c) 2019 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "mbed.h"
+#include "platform/mbed_thread.h"
+
+// Blinking rate in milliseconds
+#define SCANNING_RATE_MS                                                     1
+
+DigitalIn judgement(D12);              //whether the module is activated
+DigitalOut buzzer(A0);                 //define the buzzer
+DigitalOut loc1(A1);                   //define the location pin of the digital tube
+DigitalOut loc2(A2);
+DigitalOut loc3(A3);
+DigitalOut loc4(A5);
+BusOut nu_display(D2,D3,D4,A7,D6,D9,D10,D11);       //define the display pin of the digital tube
+        //display a, b, c, d, e, f, g,  dp
+
+/**************Digital tube segment select function**************/
+void dsply_nu(int nu)
+{
+    switch(nu)
+            {
+                case 0: nu_display = 0xC0; break;          //display 0 
+                case 1: nu_display = 0xF9; break;          //display 1
+                case 2: nu_display = 0xA4; break;          //display 2 
+                case 3: nu_display = 0xB0; break;          //display 3
+                case 4: nu_display = 0x99; break;          //display 4 
+                case 5: nu_display = 0x92; break;          //display 5
+                case 6: nu_display = 0x82; break;          //display 6 
+                case 7: nu_display = 0xF8; break;          //display 7
+                case 8: nu_display = 0x80; break;          //display 8 
+                case 9: nu_display = 0x90; break;          //display 9
+            }
+}
+
+/**************Digital tube location select function**************/
+void lct_slct(int nu)
+{
+    switch(nu)                          //select the location displayed
+    {
+        case 1: loc1 = 1;
+                loc2 = loc3 = loc4 = 0;
+                break;
+        case 2: loc2 = 1;
+                loc1 = loc3 = loc4 = 0;
+                break;
+        case 3: loc3 = 1;
+                loc1 = loc2 = loc4 = 0;
+                break;
+        case 4: loc4 = 1;
+                loc1 = loc2 = loc3 = 0;
+                break;
+    }
+}
+
+/**************Display function**************/
+/**************Buzzer included**************/
+void display1(int nu)
+{
+        int nu1, nu2, nu3, nu4;         //divide the number
+        nu4 = nu % 10;
+        nu3 = (nu/10) % 10;
+        nu2 = (nu/100) % 10;
+        nu1 = (nu/1000);
+        
+        buzzer = 1;                     //buzzer activated for 20 ms
+        thread_sleep_for(20);
+        buzzer = 0;
+        
+        while(1)
+        {
+            lct_slct(1);                            //select the first location
+            dsply_nu(nu1);                          //display the number
+            thread_sleep_for(SCANNING_RATE_MS);     //last for 1 ms
+            if(judgement != 0)
+                break;
+        
+            lct_slct(2);                            //select the second location
+            dsply_nu(nu2);                          //display the number
+            thread_sleep_for(SCANNING_RATE_MS);     //last for 1 ms
+            if(judgement != 0)
+                break;
+        
+            lct_slct(3);                            //select the third location
+            dsply_nu(nu3);                          //display the number
+            thread_sleep_for(SCANNING_RATE_MS);     //last for 1 ms
+            if(judgement != 0)
+                break;
+        
+            lct_slct(4);                            //select the forth number
+            dsply_nu(nu4);                          //display the number
+            thread_sleep_for(SCANNING_RATE_MS);     //last for 1 ms
+            if(judgement != 0)
+                break;
+        }
+}
+
+/**************Display function**************/
+/**************Buzzer excluded**************/
+void display2(int nu)
+{
+        int nu1, nu2, nu3, nu4;         //divide the number
+        nu4 = nu % 10;
+        nu3 = (nu/10) % 10;
+        nu2 = (nu/100) % 10;
+        nu1 = (nu/1000);
+        
+        while(1)
+        {
+            lct_slct(1);                                //select the first location
+            dsply_nu(nu1);                              //display the number
+            thread_sleep_for(SCANNING_RATE_MS);         //last for 1 ms
+            if(judgement == 0)
+                break;
+        
+            lct_slct(2);                                //select the second location
+            dsply_nu(nu2);                              //display the number
+            thread_sleep_for(SCANNING_RATE_MS);         //last for 1 ms
+            if(judgement == 0)
+                break;
+        
+            lct_slct(3);                                //select the third location
+            dsply_nu(nu3);                              //displat the number
+            thread_sleep_for(SCANNING_RATE_MS);         //last for 1 ms
+            if(judgement == 0)
+                break;
+        
+            lct_slct(4);                                //select the forth location
+            dsply_nu(nu4);                              //display the number
+            thread_sleep_for(SCANNING_RATE_MS);         //last for 1 ms
+            if(judgement == 0)
+                break;
+        }
+}
+
+/**************Main function**************/
+int main()
+{
+    int count = 0;
+    while(1)
+    {
+        display2(count);            //display the number(0)
+        if(judgement == 0)
+        {
+            count += 1;             //counter plus one
+            display1(count);        //when the obeject still exist, display the number with a short beep
+            display2(count);        //when the object is removed, display the number without any sound
+        }
+    }
+}
